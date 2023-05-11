@@ -26,12 +26,11 @@ pub fn build_simple_segment(
                 VectorDataConfig {
                     size: dim,
                     distance,
-                    hnsw_config: None,
+                    index: Indexes::Plain {},
                     quantization_config: None,
                     on_disk: None,
                 },
             )]),
-            index: Indexes::Plain {},
             ..Default::default()
         },
     )
@@ -49,7 +48,7 @@ pub fn build_multivec_segment(
         VectorDataConfig {
             size: dim1,
             distance,
-            hnsw_config: None,
+            index: Indexes::Plain {},
             quantization_config: None,
             on_disk: None,
         },
@@ -59,7 +58,7 @@ pub fn build_multivec_segment(
         VectorDataConfig {
             size: dim2,
             distance,
-            hnsw_config: None,
+            index: Indexes::Plain {},
             quantization_config: None,
             on_disk: None,
         },
@@ -69,7 +68,6 @@ pub fn build_multivec_segment(
         path,
         &SegmentConfig {
             vector_data: vectors_config,
-            index: Indexes::Plain {},
             ..Default::default()
         },
     )

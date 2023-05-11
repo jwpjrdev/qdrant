@@ -45,12 +45,11 @@ mod tests {
                 VectorDataConfig {
                     size: dim,
                     distance,
-                    hnsw_config: None,
+                    index: Indexes::Plain {},
                     quantization_config: None,
                     on_disk: None,
                 },
             )]),
-            index: Indexes::Plain {},
             storage_type: StorageType::InMemory,
             ..Default::default()
         };

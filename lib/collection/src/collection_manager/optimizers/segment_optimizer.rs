@@ -13,7 +13,7 @@ use segment::segment::Segment;
 use segment::segment_constructor::build_segment;
 use segment::segment_constructor::segment_builder::SegmentBuilder;
 use segment::types::{
-    HnswConfig, Indexes, PayloadFieldSchema, PayloadKeyType, PayloadStorageType, PointIdType,
+    HnswConfig, PayloadFieldSchema, PayloadKeyType, PayloadStorageType, PointIdType,
     QuantizationConfig, SegmentConfig, StorageType, VECTOR_ELEMENT_SIZE,
 };
 
@@ -77,7 +77,6 @@ pub trait SegmentOptimizer {
         let config = SegmentConfig {
             vector_data: collection_params
                 .get_all_vector_params(self.hnsw_config(), self.quantization_config().as_ref())?,
-            index: Indexes::Plain {},
             storage_type: StorageType::InMemory,
             payload_storage_type: match collection_params.on_disk_payload {
                 true => PayloadStorageType::OnDisk,
@@ -151,11 +150,6 @@ pub trait SegmentOptimizer {
         let optimized_config = SegmentConfig {
             vector_data: collection_params
                 .get_all_vector_params(self.hnsw_config(), self.quantization_config().as_ref())?,
-            index: if is_indexed {
-                Indexes::Hnsw(self.hnsw_config().clone())
-            } else {
-                Indexes::Plain {}
-            },
             storage_type: if is_on_disk {
                 StorageType::Mmap
             } else {

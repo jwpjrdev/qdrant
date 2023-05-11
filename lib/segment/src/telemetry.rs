@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::common::anonymize::Anonymize;
 use crate::common::operation_time_statistics::OperationDurationStatistics;
-use crate::types::{PayloadIndexInfo, SegmentConfig, SegmentInfo, VectorDataConfig};
+use crate::types::{Indexes, PayloadIndexInfo, SegmentConfig, SegmentInfo, VectorDataConfig};
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 pub struct VectorIndexesTelemetry {
@@ -107,7 +107,6 @@ impl Anonymize for SegmentConfig {
     fn anonymize(&self) -> Self {
         SegmentConfig {
             vector_data: self.vector_data.anonymize(),
-            index: self.index.clone(),
             storage_type: self.storage_type,
             payload_storage_type: self.payload_storage_type,
         }
@@ -119,7 +118,7 @@ impl Anonymize for VectorDataConfig {
         VectorDataConfig {
             size: self.size.anonymize(),
             distance: self.distance,
-            hnsw_config: None,
+            index: Indexes::Plain {},
             quantization_config: None,
             on_disk: None,
         }

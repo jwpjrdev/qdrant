@@ -117,7 +117,7 @@ pub fn build_segment_3(path: &Path) -> Segment {
                     VectorDataConfig {
                         size: 4,
                         distance: Distance::Dot,
-                        hnsw_config: None,
+                        index: Indexes::Plain {},
                         quantization_config: None,
                         on_disk: None,
                     },
@@ -127,7 +127,7 @@ pub fn build_segment_3(path: &Path) -> Segment {
                     VectorDataConfig {
                         size: 1,
                         distance: Distance::Dot,
-                        hnsw_config: None,
+                        index: Indexes::Plain {},
                         quantization_config: None,
                         on_disk: None,
                     },
@@ -137,13 +137,12 @@ pub fn build_segment_3(path: &Path) -> Segment {
                     VectorDataConfig {
                         size: 4,
                         distance: Distance::Euclid,
-                        hnsw_config: None,
+                        index: Indexes::Plain {},
                         quantization_config: None,
                         on_disk: None,
                     },
                 ),
             ]),
-            index: Indexes::Plain {},
             ..Default::default()
         },
     )

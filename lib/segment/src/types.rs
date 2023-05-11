@@ -294,7 +294,7 @@ pub struct SearchParams {
     pub quantization: Option<QuantizationSearchParams>,
 }
 
-/// Vector index configuration of the segment
+/// Vector index configuration
 #[derive(Debug, Deserialize, Serialize, JsonSchema, Clone, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "type", content = "options")]
@@ -305,6 +305,15 @@ pub enum Indexes {
     /// Use filterable HNSW index for approximate search. Is very fast even on a very huge collections,
     /// but require additional space to store index and additional time to build it.
     Hnsw(HnswConfig),
+}
+
+impl Indexes {
+    pub fn is_indexed(&self) -> bool {
+        match self {
+            Indexes::Plain {} => false,
+            Indexes::Hnsw(_) => true,
+        }
+    }
 }
 
 /// Config of HNSW index
@@ -472,8 +481,6 @@ pub enum PayloadStorageType {
 #[serde(rename_all = "snake_case")]
 pub struct SegmentConfig {
     pub vector_data: HashMap<String, VectorDataConfig>,
-    /// Type of index used for search
-    pub index: Indexes,
     /// Type of vector storage
     pub storage_type: StorageType,
     /// Defines payload storage type
@@ -493,11 +500,14 @@ impl SegmentConfig {
             .and_then(|v| v.quantization_config.as_ref())
     }
 
-    pub fn is_vector_indexed(&self) -> bool {
-        match self.index {
-            Indexes::Plain {} => false,
-            Indexes::Hnsw(_) => true,
-        }
+    pub fn is_vector_indexed(&self, vector_name: &str) -> Option<bool> {
+        self.vector_data
+            .get(vector_name)
+            .map(|v| v.index.is_indexed())
+    }
+
+    pub fn is_any_vector_indexed(&self) -> bool {
+        self.vector_data.values().any(|v| v.index.is_indexed())
     }
 
     pub fn is_memmaped(&self) -> bool {
@@ -526,27 +536,38 @@ pub struct SegmentConfigV5 {
 }
 
 impl From<SegmentConfigV5> for SegmentConfig {
-    fn from(old: SegmentConfigV5) -> Self {
-        let vector_data = old
+    fn from(old_segment: SegmentConfigV5) -> Self {
+        let vector_data = old_segment
             .vector_data
             .into_iter()
-            .map(|(vector_name, mut vector_data)| {
-                // Remove vector specific quantization config if no global one is set
-                // This is required because in some cases this was incorrectly set on the vector
-                // level
-                if old.quantization_config.is_none() {
-                    vector_data.quantization_config.take();
-                }
+            .map(|(vector_name, old_data)| {
+                let new_data = VectorDataConfig {
+                    size: old_data.size,
+                    distance: old_data.distance,
+                    // Use HNSW index if vector specific one is set, or fall back to segment index
+                    index: match old_data.hnsw_config {
+                        Some(hnsw_config) => Indexes::Hnsw(hnsw_config),
+                        // TODO: clone required here?
+                        None => old_segment.index.clone(),
+                    },
+                    // Remove vector specific quantization config if no segment one is set
+                    // This is required because in some cases this was incorrectly set on the vector
+                    // level
+                    quantization_config: old_segment
+                        .quantization_config
+                        .as_ref()
+                        .and(old_data.quantization_config),
+                    on_disk: old_data.on_disk,
+                };
 
-                (vector_name, vector_data.into())
+                (vector_name, new_data)
             })
             .collect();
 
         SegmentConfig {
             vector_data,
-            index: old.index,
-            storage_type: old.storage_type,
-            payload_storage_type: old.payload_storage_type,
+            storage_type: old_segment.storage_type,
+            payload_storage_type: old_segment.payload_storage_type,
         }
     }
 }
@@ -559,9 +580,8 @@ pub struct VectorDataConfig {
     pub size: usize,
     /// Type of distance function used for measuring distance between vectors
     pub distance: Distance,
-    /// Vector specific HNSW config that overrides collection config
-    #[serde(default)]
-    pub hnsw_config: Option<HnswConfig>,
+    /// Type of index used for search
+    pub index: Indexes,
     /// Vector specific quantization config that overrides collection config
     #[serde(default)]
     pub quantization_config: Option<QuantizationConfig>,
@@ -596,18 +616,6 @@ pub struct VectorDataConfigV5 {
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub on_disk: Option<bool>,
-}
-
-impl From<VectorDataConfigV5> for VectorDataConfig {
-    fn from(old: VectorDataConfigV5) -> Self {
-        Self {
-            size: old.size,
-            distance: old.distance,
-            hnsw_config: old.hnsw_config,
-            quantization_config: old.quantization_config,
-            on_disk: old.on_disk,
-        }
-    }
 }
 
 /// Default value based on <https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md>

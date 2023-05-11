@@ -88,12 +88,11 @@ mod tests {
                 VectorDataConfig {
                     size: segment.segment_config.vector_data[DEFAULT_VECTOR_NAME].size,
                     distance: segment.segment_config.vector_data[DEFAULT_VECTOR_NAME].distance,
-                    hnsw_config: None,
+                    index: Indexes::Hnsw(Default::default()),
                     quantization_config: None,
                     on_disk: None,
                 },
             )]),
-            index: Indexes::Hnsw(Default::default()),
             ..Default::default()
         };
 

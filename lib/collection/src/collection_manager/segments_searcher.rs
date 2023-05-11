@@ -8,7 +8,7 @@ use segment::data_types::named_vectors::NamedVectors;
 use segment::data_types::vectors::VectorElementType;
 use segment::entry::entry_point::OperationError;
 use segment::types::{
-    Filter, Indexes, PointIdType, ScoreType, ScoredPoint, SearchParams, SegmentConfig,
+    Filter, Indexes, PointIdType, ScoreType, ScoredPoint, SearchParams,
     SeqNumberType, WithPayload, WithPayloadInterface, WithVector,
 };
 use tokio::runtime::Handle;
@@ -403,7 +403,11 @@ async fn search_in_segment(
                 let segment_points = read_segment.available_point_count();
                 let top = if use_sampling {
                     let ef_limit = prev_params.params.and_then(|p| p.hnsw_ef).or_else(|| {
-                        get_hnsw_ef_construct(read_segment.config(), prev_params.vector_name)
+                        // Grab ef_construct from HNSW config
+                        read_segment.config().vector_data.get(prev_params.vector_name).and_then(|config| match &config.index {
+                            Indexes::Plain {} => None,
+                            Indexes::Hnsw(hnsw) => Some(hnsw),
+                        }).map(|hnsw| hnsw.ef_construct)
                     });
                     sampling_limit(prev_params.top, ef_limit, segment_points, total_points)
                 } else {
@@ -441,7 +445,13 @@ async fn search_in_segment(
             let ef_limit = prev_params
                 .params
                 .and_then(|p| p.hnsw_ef)
-                .or_else(|| get_hnsw_ef_construct(read_segment.config(), prev_params.vector_name));
+                .or_else(|| {
+                    // Grab ef_construct from HNSW config
+                    read_segment.config().vector_data.get(prev_params.vector_name).and_then(|config| match &config.index {
+                        Indexes::Plain {} => None,
+                        Indexes::Hnsw(hnsw) => Some(hnsw),
+                    }).map(|hnsw| hnsw.ef_construct)
+                });
             sampling_limit(prev_params.top, ef_limit, segment_points, total_points)
         } else {
             prev_params.top
@@ -462,23 +472,6 @@ async fn search_in_segment(
     }
 
     Ok((result, further_results))
-}
-
-/// Find the maximum segment or vector specific HNSW ef_construct in this config
-///
-/// If the index is `Plain`, `None` is returned.
-fn get_hnsw_ef_construct(config: SegmentConfig, vector_name: &str) -> Option<usize> {
-    match config.index {
-        Indexes::Plain {} => None,
-        Indexes::Hnsw(hnsw_config) => Some(
-            config
-                .vector_data
-                .get(vector_name)
-                .and_then(|c| c.hnsw_config.as_ref())
-                .map(|c| c.ef_construct)
-                .unwrap_or(hnsw_config.ef_construct),
-        ),
-    }
 }
 
 #[cfg(test)]

@@ -1,6 +1,7 @@
 use std::cmp::max;
 use std::collections::{HashMap, HashSet};
 use std::fs::{self, File};
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread::JoinHandle;
@@ -84,6 +85,17 @@ pub struct Segment {
 pub struct VectorData {
     pub vector_index: Arc<AtomicRefCell<VectorIndexEnum>>,
     pub vector_storage: Arc<AtomicRefCell<VectorStorageEnum>>,
+}
+
+impl VectorData {
+    /// Whether this vector data has appendable storage
+    pub fn is_appendable(&self) -> bool {
+        match self.vector_storage.borrow().deref() {
+            VectorStorageEnum::Simple(_) => true,
+            VectorStorageEnum::Memmap(_) => false,
+            VectorStorageEnum::AppendableMemmap(_) => true,
+        }
+    }
 }
 
 impl Segment {
@@ -1082,8 +1094,8 @@ impl SegmentEntry for Segment {
             num_vectors: self.available_point_count() * self.vector_data.len(),
             num_points: self.available_point_count(),
             num_deleted_vectors: self.deleted_point_count(),
-            ram_usage_bytes: 0,  // ToDo: Implement
-            disk_usage_bytes: 0, // ToDo: Implement
+            ram_usage_bytes: 0,  // TODO: Implement
+            disk_usage_bytes: 0, // TODO: Implement
             is_appendable: self.appendable_flag,
             index_schema: schema,
         }
@@ -1508,12 +1520,11 @@ mod tests {
                 VectorDataConfig {
                     size: dim,
                     distance: Distance::Dot,
-                    hnsw_config: None,
+                    index: Indexes::Plain {},
                     quantization_config: None,
                     on_disk: None,
                 },
             )]),
-            index: Indexes::Plain {},
             storage_type: StorageType::InMemory,
             ..Default::default()
         };
@@ -1580,12 +1591,11 @@ mod tests {
                 VectorDataConfig {
                     size: dim,
                     distance: Distance::Dot,
-                    hnsw_config: None,
+                    index: Indexes::Plain {},
                     quantization_config: None,
                     on_disk: None,
                 },
             )]),
-            index: Indexes::Plain {},
             storage_type: StorageType::InMemory,
             ..Default::default()
         };
@@ -1671,12 +1681,11 @@ mod tests {
                 VectorDataConfig {
                     size: 2,
                     distance: Distance::Dot,
-                    hnsw_config: None,
+                    index: Indexes::Plain {},
                     quantization_config: None,
                     on_disk: None,
                 },
             )]),
-            index: Indexes::Plain {},
             storage_type: StorageType::InMemory,
             ..Default::default()
         };
@@ -1761,12 +1770,11 @@ mod tests {
                 VectorDataConfig {
                     size: 2,
                     distance: Distance::Dot,
-                    hnsw_config: None,
+                    index: Indexes::Plain {},
                     quantization_config: None,
                     on_disk: None,
                 },
             )]),
-            index: Indexes::Plain {},
             storage_type: StorageType::InMemory,
             ..Default::default()
         };
@@ -1794,12 +1802,11 @@ mod tests {
                 VectorDataConfig {
                     size: dim,
                     distance: Distance::Dot,
-                    hnsw_config: None,
+                    index: Indexes::Plain {},
                     quantization_config: None,
                     on_disk: None,
                 },
             )]),
-            index: Indexes::Plain {},
             storage_type: StorageType::InMemory,
             payload_storage_type: Default::default(),
         };

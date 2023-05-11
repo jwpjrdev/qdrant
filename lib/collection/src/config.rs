@@ -9,7 +9,7 @@ use atomicwrites::OverwriteBehavior::AllowOverwrite;
 use schemars::JsonSchema;
 use segment::common::anonymize::Anonymize;
 use segment::data_types::vectors::DEFAULT_VECTOR_NAME;
-use segment::types::{HnswConfig, QuantizationConfig, VectorDataConfig};
+use segment::types::{HnswConfig, Indexes, QuantizationConfig, VectorDataConfig};
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 use wal::WalOptions;
@@ -179,9 +179,12 @@ impl CollectionParams {
                     VectorDataConfig {
                         size: params.size.get() as usize,
                         distance: params.distance,
-                        hnsw_config: params
-                            .hnsw_config
-                            .and_then(|c| c.update(collection_hnsw).ok()),
+                        index: Indexes::Hnsw(
+                            params
+                                .hnsw_config
+                                .and_then(|c| c.update(collection_hnsw).ok())
+                                .unwrap_or_else(|| collection_hnsw.clone()),
+                        ),
                         // Only set if enabled on segment level as well
                         // TODO: is this correct?
                         quantization_config: collection_quantization
