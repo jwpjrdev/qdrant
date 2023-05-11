@@ -161,12 +161,12 @@ impl CollectionParams {
             })
     }
 
-    /// Get all vector params as `VectorDataConfig`
+    /// Convert all vector params into basic `VectorDataConfig`
     ///
-    /// The vector specific HNSW configuration will be based upon the given `collection_hnsw`.
-    pub fn get_all_vector_params(
+    /// This will create vector data configurations with the default index and storage settings. No
+    /// settings optimization (based on thresholds) will be done.
+    pub fn into_base_vector_data(
         &self,
-        _collection_hnsw: &HnswConfig,
         collection_quantization: Option<&QuantizationConfig>,
     ) -> CollectionResult<HashMap<String, VectorDataConfig>> {
         Ok(self
@@ -181,6 +181,7 @@ impl CollectionParams {
                         index: Indexes::Plain {},
                         // Only set if enabled on segment level as well
                         // TODO: is this correct?
+                        // TODO: decide this outside this function?
                         quantization_config: collection_quantization
                             .and(params.quantization_config.as_ref())
                             .cloned(),
