@@ -78,9 +78,10 @@ pub trait SegmentOptimizer {
         let config = SegmentConfig {
             vector_data: collection_params
                 .get_all_vector_params(self.hnsw_config(), self.quantization_config().as_ref())?,
-            payload_storage_type: match collection_params.on_disk_payload {
-                true => PayloadStorageType::OnDisk,
-                false => PayloadStorageType::InMemory,
+            payload_storage_type: if collection_params.on_disk_payload {
+                PayloadStorageType::OnDisk
+            } else {
+                PayloadStorageType::InMemory
             },
         };
         Ok(LockedSegment::new(build_segment(
@@ -149,6 +150,23 @@ pub trait SegmentOptimizer {
 
         let mut vector_data = collection_params
             .get_all_vector_params(self.hnsw_config(), self.quantization_config().as_ref())?;
+
+        // If indexing, change to HNSW index
+        if is_indexed {
+            let collection_hnsw = self.hnsw_config();
+            vector_data.iter_mut().for_each(|(vector_name, config)| {
+                let param_hnsw = collection_params
+                    .vectors
+                    .get_params(vector_name)
+                    .and_then(|params| params.hnsw_config);
+                let vector_hnsw = param_hnsw
+                    .and_then(|c| c.update(collection_hnsw).ok())
+                    .unwrap_or_else(|| collection_hnsw.clone());
+                config.index = Indexes::Hnsw(vector_hnsw);
+            });
+        }
+
+        // If storing on disk, change to mmap
         if is_on_disk {
             vector_data.values_mut().for_each(|config| {
                 config.storage_type = StorageType::Mmap;
@@ -157,9 +175,10 @@ pub trait SegmentOptimizer {
 
         let optimized_config = SegmentConfig {
             vector_data,
-            payload_storage_type: match collection_params.on_disk_payload {
-                true => PayloadStorageType::OnDisk,
-                false => PayloadStorageType::InMemory,
+            payload_storage_type: if collection_params.on_disk_payload {
+                PayloadStorageType::OnDisk
+            } else {
+                PayloadStorageType::InMemory
             },
         };
 

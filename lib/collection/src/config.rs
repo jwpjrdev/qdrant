@@ -14,7 +14,6 @@ use serde::{Deserialize, Serialize};
 use validator::Validate;
 use wal::WalOptions;
 
-use crate::operations::config_diff::DiffConfig;
 use crate::operations::types::{CollectionError, CollectionResult, VectorParams, VectorsConfig};
 use crate::operations::validation;
 use crate::optimizers_builder::OptimizersConfig;
@@ -167,7 +166,7 @@ impl CollectionParams {
     /// The vector specific HNSW configuration will be based upon the given `collection_hnsw`.
     pub fn get_all_vector_params(
         &self,
-        collection_hnsw: &HnswConfig,
+        _collection_hnsw: &HnswConfig,
         collection_quantization: Option<&QuantizationConfig>,
     ) -> CollectionResult<HashMap<String, VectorDataConfig>> {
         Ok(self
@@ -179,12 +178,7 @@ impl CollectionParams {
                     VectorDataConfig {
                         size: params.size.get() as usize,
                         distance: params.distance,
-                        index: Indexes::Hnsw(
-                            params
-                                .hnsw_config
-                                .and_then(|c| c.update(collection_hnsw).ok())
-                                .unwrap_or_else(|| collection_hnsw.clone()),
-                        ),
+                        index: Indexes::Plain {},
                         // Only set if enabled on segment level as well
                         // TODO: is this correct?
                         quantization_config: collection_quantization
