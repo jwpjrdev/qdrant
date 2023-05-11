@@ -8,8 +8,8 @@ use segment::data_types::named_vectors::NamedVectors;
 use segment::data_types::vectors::VectorElementType;
 use segment::entry::entry_point::OperationError;
 use segment::types::{
-    Filter, Indexes, PointIdType, ScoreType, ScoredPoint, SearchParams,
-    SeqNumberType, WithPayload, WithPayloadInterface, WithVector,
+    Filter, Indexes, PointIdType, ScoreType, ScoredPoint, SearchParams, SeqNumberType, WithPayload,
+    WithPayloadInterface, WithVector,
 };
 use tokio::runtime::Handle;
 use tokio::task::JoinHandle;
@@ -404,10 +404,15 @@ async fn search_in_segment(
                 let top = if use_sampling {
                     let ef_limit = prev_params.params.and_then(|p| p.hnsw_ef).or_else(|| {
                         // Grab ef_construct from HNSW config
-                        read_segment.config().vector_data.get(prev_params.vector_name).and_then(|config| match &config.index {
-                            Indexes::Plain {} => None,
-                            Indexes::Hnsw(hnsw) => Some(hnsw),
-                        }).map(|hnsw| hnsw.ef_construct)
+                        read_segment
+                            .config()
+                            .vector_data
+                            .get(prev_params.vector_name)
+                            .and_then(|config| match &config.index {
+                                Indexes::Plain {} => None,
+                                Indexes::Hnsw(hnsw) => Some(hnsw),
+                            })
+                            .map(|hnsw| hnsw.ef_construct)
                     });
                     sampling_limit(prev_params.top, ef_limit, segment_points, total_points)
                 } else {
@@ -442,16 +447,18 @@ async fn search_in_segment(
         let read_segment = locked_segment.read();
         let segment_points = read_segment.available_point_count();
         let top = if use_sampling {
-            let ef_limit = prev_params
-                .params
-                .and_then(|p| p.hnsw_ef)
-                .or_else(|| {
-                    // Grab ef_construct from HNSW config
-                    read_segment.config().vector_data.get(prev_params.vector_name).and_then(|config| match &config.index {
+            let ef_limit = prev_params.params.and_then(|p| p.hnsw_ef).or_else(|| {
+                // Grab ef_construct from HNSW config
+                read_segment
+                    .config()
+                    .vector_data
+                    .get(prev_params.vector_name)
+                    .and_then(|config| match &config.index {
                         Indexes::Plain {} => None,
                         Indexes::Hnsw(hnsw) => Some(hnsw),
-                    }).map(|hnsw| hnsw.ef_construct)
-                });
+                    })
+                    .map(|hnsw| hnsw.ef_construct)
+            });
             sampling_limit(prev_params.top, ef_limit, segment_points, total_points)
         } else {
             prev_params.top
