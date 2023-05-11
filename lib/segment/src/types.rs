@@ -481,8 +481,6 @@ pub enum PayloadStorageType {
 #[serde(rename_all = "snake_case")]
 pub struct SegmentConfig {
     pub vector_data: HashMap<String, VectorDataConfig>,
-    /// Type of vector storage
-    pub storage_type: StorageType,
     /// Defines payload storage type
     #[serde(default)]
     pub payload_storage_type: PayloadStorageType,
@@ -510,11 +508,22 @@ impl SegmentConfig {
         self.vector_data.values().any(|v| v.index.is_indexed())
     }
 
-    pub fn is_memmaped(&self) -> bool {
-        match self.storage_type {
-            StorageType::InMemory => false,
-            StorageType::Mmap => true,
-        }
+    pub fn is_any_memmaped(&self) -> bool {
+        self.vector_data
+            .values()
+            .any(|config| match config.storage_type {
+                StorageType::InMemory => false,
+                StorageType::Mmap => true,
+            })
+    }
+
+    pub fn is_all_memmaped(&self) -> bool {
+        self.vector_data
+            .values()
+            .all(|config| match config.storage_type {
+                StorageType::InMemory => false,
+                StorageType::Mmap => true,
+            })
     }
 }
 
@@ -558,6 +567,7 @@ impl From<SegmentConfigV5> for SegmentConfig {
                         .as_ref()
                         .and(old_data.quantization_config),
                     on_disk: old_data.on_disk,
+                    storage_type: old_segment.storage_type,
                 };
 
                 (vector_name, new_data)
@@ -566,7 +576,6 @@ impl From<SegmentConfigV5> for SegmentConfig {
 
         SegmentConfig {
             vector_data,
-            storage_type: old_segment.storage_type,
             payload_storage_type: old_segment.payload_storage_type,
         }
     }
@@ -592,6 +601,8 @@ pub struct VectorDataConfig {
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub on_disk: Option<bool>,
+    /// Type of vector storage
+    pub storage_type: StorageType,
 }
 
 /// Config of single vector data storage

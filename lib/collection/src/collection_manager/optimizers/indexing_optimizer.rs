@@ -83,7 +83,7 @@ impl IndexingOptimizer {
 
                 let segment_config = read_segment.config();
                 let any_vector_indexed = segment_config.is_any_vector_indexed();
-                let is_memmaped = segment_config.is_memmaped();
+                let is_memmaped = segment_config.is_all_memmaped();
 
                 if !(any_vector_indexed || is_memmaped) {
                     return None;
@@ -129,7 +129,7 @@ impl IndexingOptimizer {
 
                 // Apply indexing to plain segments which have grown too big
                 let any_vector_indexed = segment_config.is_any_vector_indexed();
-                let is_memmaped = segment_config.is_memmaped();
+                let is_memmaped = segment_config.is_any_memmaped();
 
                 let big_for_mmap = vector_size
                     >= self
@@ -251,7 +251,7 @@ mod tests {
     use rand::thread_rng;
     use segment::data_types::vectors::DEFAULT_VECTOR_NAME;
     use segment::fixtures::index_fixtures::random_vector;
-    use segment::types::{Payload, PayloadSchemaType, StorageType};
+    use segment::types::{Payload, PayloadSchemaType};
     use serde_json::json;
     use tempfile::Builder;
 
@@ -528,7 +528,7 @@ mod tests {
 
         let mmap_count = configs
             .iter()
-            .filter(|config| config.storage_type == StorageType::Mmap)
+            .filter(|config| config.is_any_memmaped())
             .count();
         assert_eq!(
             mmap_count, 1,

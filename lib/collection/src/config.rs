@@ -191,6 +191,7 @@ impl CollectionParams {
                             .and(params.quantization_config.as_ref())
                             .cloned(),
                         on_disk: params.on_disk,
+                        storage_type: Default::default(),
                     },
                 )
             })

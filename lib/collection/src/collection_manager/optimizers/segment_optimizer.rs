@@ -13,7 +13,7 @@ use segment::segment::Segment;
 use segment::segment_constructor::build_segment;
 use segment::segment_constructor::segment_builder::SegmentBuilder;
 use segment::types::{
-    HnswConfig, PayloadFieldSchema, PayloadKeyType, PayloadStorageType, PointIdType,
+    HnswConfig, Indexes, PayloadFieldSchema, PayloadKeyType, PayloadStorageType, PointIdType,
     QuantizationConfig, SegmentConfig, StorageType, VECTOR_ELEMENT_SIZE,
 };
 
@@ -22,6 +22,7 @@ use crate::collection_manager::holders::segment_holder::{
     LockedSegment, LockedSegmentHolder, SegmentId,
 };
 use crate::config::CollectionParams;
+use crate::operations::config_diff::DiffConfig;
 use crate::operations::types::{CollectionError, CollectionResult};
 
 const BYTES_IN_KB: usize = 1024;
@@ -77,7 +78,6 @@ pub trait SegmentOptimizer {
         let config = SegmentConfig {
             vector_data: collection_params
                 .get_all_vector_params(self.hnsw_config(), self.quantization_config().as_ref())?,
-            storage_type: StorageType::InMemory,
             payload_storage_type: match collection_params.on_disk_payload {
                 true => PayloadStorageType::OnDisk,
                 false => PayloadStorageType::InMemory,
@@ -147,14 +147,16 @@ pub trait SegmentOptimizer {
         let is_on_disk = maximal_vector_store_size_bytes
             >= thresholds.memmap_threshold.saturating_mul(BYTES_IN_KB);
 
+        let mut vector_data = collection_params
+            .get_all_vector_params(self.hnsw_config(), self.quantization_config().as_ref())?;
+        if is_on_disk {
+            vector_data.values_mut().for_each(|config| {
+                config.storage_type = StorageType::Mmap;
+            });
+        }
+
         let optimized_config = SegmentConfig {
-            vector_data: collection_params
-                .get_all_vector_params(self.hnsw_config(), self.quantization_config().as_ref())?,
-            storage_type: if is_on_disk {
-                StorageType::Mmap
-            } else {
-                StorageType::InMemory
-            },
+            vector_data,
             payload_storage_type: match collection_params.on_disk_payload {
                 true => PayloadStorageType::OnDisk,
                 false => PayloadStorageType::InMemory,

@@ -1523,9 +1523,9 @@ mod tests {
                     index: Indexes::Plain {},
                     quantization_config: None,
                     on_disk: None,
+                    storage_type: StorageType::InMemory,
                 },
             )]),
-            storage_type: StorageType::InMemory,
             ..Default::default()
         };
         let mut segment = build_segment(dir.path(), &config).unwrap();
@@ -1594,9 +1594,9 @@ mod tests {
                     index: Indexes::Plain {},
                     quantization_config: None,
                     on_disk: None,
+                    storage_type: StorageType::InMemory,
                 },
             )]),
-            storage_type: StorageType::InMemory,
             ..Default::default()
         };
 
@@ -1684,9 +1684,9 @@ mod tests {
                     index: Indexes::Plain {},
                     quantization_config: None,
                     on_disk: None,
+                    storage_type: StorageType::InMemory,
                 },
             )]),
-            storage_type: StorageType::InMemory,
             ..Default::default()
         };
 
@@ -1773,9 +1773,9 @@ mod tests {
                     index: Indexes::Plain {},
                     quantization_config: None,
                     on_disk: None,
+                    storage_type: StorageType::InMemory,
                 },
             )]),
-            storage_type: StorageType::InMemory,
             ..Default::default()
         };
 
@@ -1805,9 +1805,9 @@ mod tests {
                     index: Indexes::Plain {},
                     quantization_config: None,
                     on_disk: None,
+                    storage_type: StorageType::InMemory,
                 },
             )]),
-            storage_type: StorageType::InMemory,
             payload_storage_type: Default::default(),
         };
         let mut segment = build_segment(dir.path(), &config).unwrap();
